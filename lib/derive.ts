@@ -85,6 +85,62 @@ export function categoryTotals(expenseTxs: Transaction[], categories: Category[]
     .sort((a, b) => b.totalCents - a.totalCents);
 }
 
+export type MonthTotal = {
+  month: number; // 1-12
+  income: number;
+  expense: number;
+  balance: number;
+  // hay algún movimiento (de cualquier tipo, incluidos traspasos) ese mes.
+  hasData: boolean;
+};
+
+// Un total por mes del año, para el gráfico de barras de Año.
+export function monthlyTotals(txs: Transaction[], year: number): MonthTotal[] {
+  const totals: MonthTotal[] = Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    income: 0,
+    expense: 0,
+    balance: 0,
+    hasData: false,
+  }));
+  for (const t of txs) {
+    if (!t.occurred_on.startsWith(`${year}-`)) continue;
+    const entry = totals[Number(t.occurred_on.slice(5, 7)) - 1];
+    entry.hasData = true;
+    if (t.kind === "income") entry.income += t.amount_cents;
+    else if (t.kind === "expense") entry.expense += t.amount_cents;
+  }
+  for (const entry of totals) entry.balance = entry.income - entry.expense;
+  return totals;
+}
+
+export type CategoryMonthRow = {
+  category: Category;
+  monthly: number[]; // 12 entradas, gasto en céntimos
+  total: number;
+};
+
+// Una fila por categoría (en su orden de sort_order, incluidas las que no
+// tuvieron gasto ningún mes) para la rejilla Categorías × meses de Año.
+export function categoryMonthlyTotals(
+  expenseTxs: Transaction[],
+  categories: Category[],
+  year: number,
+): CategoryMonthRow[] {
+  const monthlyById = new Map<string, number[]>();
+  for (const t of expenseTxs) {
+    if (t.kind !== "expense" || !t.category_id) continue;
+    if (!t.occurred_on.startsWith(`${year}-`)) continue;
+    const monthly = monthlyById.get(t.category_id) ?? Array(12).fill(0);
+    monthly[Number(t.occurred_on.slice(5, 7)) - 1] += t.amount_cents;
+    monthlyById.set(t.category_id, monthly);
+  }
+  return categories.map((category) => {
+    const monthly = monthlyById.get(category.id) ?? Array(12).fill(0);
+    return { category, monthly, total: monthly.reduce((a, b) => a + b, 0) };
+  });
+}
+
 export const MONTHS_FULL = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",

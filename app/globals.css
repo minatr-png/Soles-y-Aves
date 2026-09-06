@@ -139,6 +139,8 @@ body {
   gap: 3px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
   border: 1px solid rgba(255, 255, 255, 0.85);
 }
 
@@ -225,6 +227,8 @@ body {
   border-radius: 14px;
   border: 1px solid var(--rule-strong);
   background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   font-size: 18px;
   display: flex;
   align-items: center;
@@ -577,6 +581,8 @@ body {
   inset: 0;
   z-index: 50;
   background: rgba(32, 30, 29, 0.42);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   animation: veil-in 0.18s ease-out both;
   display: flex;
   align-items: flex-end;
@@ -777,6 +783,8 @@ body {
   border-radius: 12px;
   border: 1px solid var(--rule-strong);
   background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   font-size: 14px;
   font-family: inherit;
   color: var(--ink);
@@ -828,6 +836,8 @@ body {
   border-radius: 12px;
   border: 1px solid rgba(32, 30, 29, 0.24);
   background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -843,6 +853,8 @@ body {
   inset: 0;
   z-index: 60;
   background: rgba(32, 30, 29, 0.42);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   animation: veil-in 0.18s ease-out both;
   display: flex;
   align-items: center;
@@ -886,4 +898,149 @@ body {
   color: #f3f2f2;
   font-size: 15px;
   font-weight: 800;
+}
+
+/* ------------------------------------------------------------------ Año */
+
+.kpi-figure-30 {
+  font-size: 30px;
+}
+
+.year-header-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.year-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.year-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.year-legend-note {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted-55);
+}
+
+.year-bars-body {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.year-bar-col {
+  flex: 1 0 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.year-bar-balance {
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.year-bar-track {
+  height: 150px;
+  border-radius: 10px;
+  background: rgba(32, 30, 29, 0.06);
+  padding: 4px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.year-bar {
+  flex: 1;
+  border-radius: 7px;
+}
+
+.year-bar-chip {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 8px;
+  padding: 3px 0;
+  text-align: center;
+}
+
+.heat-grid-wrap {
+  overflow-x: auto;
+}
+
+.heat-grid-inner {
+  min-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heat-grid-row {
+  display: grid;
+  grid-template-columns: 150px repeat(12, 1fr) 96px;
+  gap: 4px;
+  align-items: center;
+}
+
+.heat-grid-head-cell {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted-50);
+  text-align: center;
+}
+
+.heat-grid-head-total {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted-50);
+  text-align: right;
+}
+
+.heat-row-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.heat-cell {
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.heat-row-total {
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
