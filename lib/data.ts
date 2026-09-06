@@ -1,6 +1,12 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Account, Category, Household, Transaction } from "@/lib/supabase/types";
+import type {
+  Account,
+  Category,
+  Household,
+  HouseholdMember,
+  Transaction,
+} from "@/lib/supabase/types";
 
 export async function getHousehold(): Promise<Household | null> {
   const supabase = await createClient();
@@ -27,6 +33,18 @@ export async function getHousehold(): Promise<Household | null> {
 
   if (householdError) throw householdError;
   return household;
+}
+
+export async function listMembers(householdId: string): Promise<HouseholdMember[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("household_members")
+    .select("*")
+    .eq("household_id", householdId)
+    .order("joined_at", { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function listAccounts(householdId: string): Promise<Account[]> {

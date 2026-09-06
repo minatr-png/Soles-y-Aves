@@ -1,4 +1,10 @@
-import { getHousehold, listAccounts, listCategories, listTransactionsForYear } from "@/lib/data";
+import {
+  getHousehold,
+  listAccounts,
+  listCategories,
+  listMembers,
+  listTransactionsForYear,
+} from "@/lib/data";
 import { money, money2, signed } from "@/lib/format";
 
 // Página temporal de la Fase 2: vuelca en crudo lo que devuelve la capa de
@@ -18,7 +24,8 @@ export default async function DebugDataPage() {
   }
 
   const year = new Date().getFullYear();
-  const [accounts, categories, transactions] = await Promise.all([
+  const [members, accounts, categories, transactions] = await Promise.all([
+    listMembers(household.id),
     listAccounts(household.id),
     listCategories(household.id),
     listTransactionsForYear(household.id, year),
@@ -29,6 +36,11 @@ export default async function DebugDataPage() {
       <section>
         <h2 className="font-bold">Household</h2>
         <pre>{JSON.stringify(household, null, 2)}</pre>
+      </section>
+
+      <section>
+        <h2 className="font-bold">Miembros ({members.length})</h2>
+        <pre>{JSON.stringify(members, null, 2)}</pre>
       </section>
 
       <section>
