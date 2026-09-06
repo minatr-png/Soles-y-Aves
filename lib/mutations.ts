@@ -38,6 +38,12 @@ export async function createTransaction(
   return data;
 }
 
+export async function deleteTransaction(id: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from("transactions").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function updateTransaction(
   id: string,
   input: MovementInput,

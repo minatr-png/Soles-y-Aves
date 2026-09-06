@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { Account, Category, HouseholdMember, MovementKind, Transaction } from "@/lib/supabase/types";
 import { ownerLabel } from "@/lib/derive";
 import { createTransaction, updateTransaction } from "@/lib/mutations";
@@ -77,6 +77,7 @@ type Props = {
 
 export function MovementSheetProvider({ householdId, accounts, categories, members, children }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,9 +166,11 @@ export function MovementSheetProvider({ householdId, accounts, categories, membe
       } else {
         await createTransaction(householdId, input);
       }
-      const [year, month] = form.date.split("-");
       close();
-      router.push(`/?y=${year}&m=${Number(month)}`);
+      if (pathname === "/") {
+        const [year, month] = form.date.split("-");
+        router.push(`/?y=${year}&m=${Number(month)}`);
+      }
       router.refresh();
     } catch {
       setSaving(false);

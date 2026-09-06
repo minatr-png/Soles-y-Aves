@@ -111,6 +111,17 @@ export function formatShortDateWithYear(occurredOn: string): string {
   return `${day} ${MONTHS_SHORT[month - 1]} ${String(year).slice(-2)}`;
 }
 
+// "YYYY-MM", usado para agrupar/filtrar movimientos por mes.
+export function monthKey(occurredOn: string): string {
+  return occurredOn.slice(0, 7);
+}
+
+// "Agosto 2026" a partir de una monthKey.
+export function formatMonthLabel(key: string): string {
+  const [year, month] = key.split("-").map(Number);
+  return `${MONTHS_FULL[month - 1]} ${year}`;
+}
+
 export function ownerLabel(account: Account | undefined, members: HouseholdMember[]): string {
   if (!account) return "";
   if (account.owner_user_id === null) return "Conjunta";
