@@ -26,6 +26,12 @@ export function money2(cents: number): string {
   return centEuros.format(Math.abs(cents) / 100);
 }
 
+// Cifra entera con el signo natural de Intl (p. ej. "-497 €"), sin forzar "+"
+// en positivos. Usada para el saldo de una cuenta, que puede ser negativo.
+export function moneyBalance(cents: number): string {
+  return wholeEuros.format(cents / 100);
+}
+
 // Con signo: "+" para positivos (y cero), menos tipográfico "−" para negativos.
 export function signed(cents: number, decimals: 0 | 2 = 0): string {
   const sign = cents < 0 ? "−" : "+";

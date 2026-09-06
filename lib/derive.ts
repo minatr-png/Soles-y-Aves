@@ -207,6 +207,32 @@ export function movementSub(tx: Transaction, accounts: Account[], members: House
   return tx.kind === "expense" && tx.note ? `${base} · ${tx.note}` : base;
 }
 
+// Movimientos que referencian esta categoría/cuenta — una categoría o cuenta
+// solo se puede borrar (archivar) cuando este recuento es 0.
+export function categoryUsageCount(categoryId: string, txs: Transaction[]): number {
+  return txs.filter((t) => t.category_id === categoryId).length;
+}
+
+export function accountUsageCount(accountId: string, txs: Transaction[]): number {
+  return txs.filter((t) => t.account_id === accountId || t.to_account_id === accountId).length;
+}
+
+// saldo(account) de SCHEMA.sql: histórico completo, no solo el año visible.
+export function accountBalance(accountId: string, txs: Transaction[]): number {
+  let total = 0;
+  for (const t of txs) {
+    if (t.kind === "income") {
+      if (t.account_id === accountId) total += t.amount_cents;
+    } else if (t.kind === "expense") {
+      if (t.account_id === accountId) total -= t.amount_cents;
+    } else {
+      if (t.account_id === accountId) total -= t.amount_cents;
+      if (t.to_account_id === accountId) total += t.amount_cents;
+    }
+  }
+  return total;
+}
+
 export function buildDonutGradient(totals: CategoryTotal[], totalCents: number): string {
   if (totalCents <= 0 || totals.length === 0) {
     return "conic-gradient(rgba(32,30,29,.14) 0 100%)";
