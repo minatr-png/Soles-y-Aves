@@ -49,7 +49,6 @@ export function ChromeHeader({ members }: Props) {
         <div className="brand-group">
           <span className="brand-mark" aria-hidden />
           <span className="brand-name">Ahorros</span>
-          <span className="brand-sub">Cuentas compartidas</span>
         </div>
 
         <div className="person-filter" role="group" aria-label="Filtro de personas">
