@@ -1,4 +1,11 @@
-import { getHousehold, listAccounts, listCategories, listMembers, listTransactionsForYear } from "@/lib/data";
+import {
+  getHousehold,
+  listAccounts,
+  listAllTransactions,
+  listCategories,
+  listMembers,
+  listTransactionsForYear,
+} from "@/lib/data";
 import { PanelView } from "@/components/panel-view";
 import { signOut } from "@/app/actions";
 
@@ -24,11 +31,12 @@ export default async function PanelPage({
   const yParam = Array.isArray(params.y) ? params.y[0] : params.y;
   const year = yParam ? Number(yParam) : new Date().getFullYear();
 
-  const [members, accounts, categories, transactions] = await Promise.all([
+  const [members, accounts, categories, transactions, allTransactions] = await Promise.all([
     listMembers(household.id),
     listAccounts(household.id),
     listCategories(household.id),
     listTransactionsForYear(household.id, year),
+    listAllTransactions(household.id),
   ]);
 
   return (
@@ -39,6 +47,7 @@ export default async function PanelPage({
         accounts={accounts}
         categories={categories}
         transactions={transactions}
+        allTransactions={allTransactions}
       />
       <form action={signOut}>
         <button type="submit" className="text-sm underline">

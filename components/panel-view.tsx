@@ -16,9 +16,9 @@ import {
   movementColor,
   movementLabel,
   movementSub,
-  scopeLabel,
   scopedAccountIds,
   sumByKind,
+  totalBalance,
   type OwnerScope,
 } from "@/lib/derive";
 
@@ -28,6 +28,7 @@ type Props = {
   accounts: Account[];
   categories: Category[];
   transactions: Transaction[];
+  allTransactions: Transaction[];
 };
 
 function amountNode(tx: Transaction) {
@@ -40,7 +41,14 @@ function amountNode(tx: Transaction) {
   return <span>{money2(tx.amount_cents)}</span>;
 }
 
-export function PanelView({ year, members, accounts, categories, transactions }: Props) {
+export function PanelView({
+  year,
+  members,
+  accounts,
+  categories,
+  transactions,
+  allTransactions,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -96,6 +104,11 @@ export function PanelView({ year, members, accounts, categories, transactions }:
   );
   const ytdBalance = balanceOf(ytdTx);
 
+  const totalMoney = useMemo(
+    () => totalBalance(allTransactions, scopeIds),
+    [allTransactions, scopeIds],
+  );
+
   const catTotals = useMemo(
     () => categoryTotals(monthExpenseTx, categories),
     [monthExpenseTx, categories],
@@ -137,7 +150,13 @@ export function PanelView({ year, members, accounts, categories, transactions }:
             ›
           </button>
         </div>
-        <span className="scope-label">{scopeLabel(ownerScope, members)}</span>
+        <div className="ml-auto flex items-baseline gap-2">
+          <span className="kicker">Dinero total</span>
+          <span className={`text-base font-extrabold ${totalMoney < 0 ? "figure-negative" : ""}`}>
+            {totalMoney < 0 ? "−" : ""}
+            {money(totalMoney)}
+          </span>
+        </div>
       </div>
 
       <div className="kpi-grid">

@@ -1,9 +1,16 @@
-import { getHousehold, listMembers } from "@/lib/data";
+import { getHousehold, listAccounts, listCategories, listMembers } from "@/lib/data";
 import { ChromeHeader } from "@/components/chrome-header";
+import { MovementSheetProvider } from "@/components/movement-sheet";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const household = await getHousehold();
-  const members = household ? await listMembers(household.id) : [];
+  const [members, accounts, categories] = household
+    ? await Promise.all([
+        listMembers(household.id),
+        listAccounts(household.id),
+        listCategories(household.id),
+      ])
+    : [[], [], []];
 
   return (
     <>
@@ -15,7 +22,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <ChromeHeader members={members} />
 
-      <main className="content-column">{children}</main>
+      {household ? (
+        <MovementSheetProvider
+          householdId={household.id}
+          accounts={accounts}
+          categories={categories}
+          members={members}
+        >
+          <main className="content-column">{children}</main>
+        </MovementSheetProvider>
+      ) : (
+        <main className="content-column">{children}</main>
+      )}
     </>
   );
 }

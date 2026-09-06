@@ -50,6 +50,26 @@ export function balanceOf(txs: Transaction[]): number {
   return sumByKind(txs, "income") - sumByKind(txs, "expense");
 }
 
+// Saldo total en las cuentas en alcance, aplicando saldo(account) de
+// SCHEMA.sql sobre TODO el histórico (no solo el año visible). Con
+// scopeIds === null (todas las cuentas) los traspasos se cancelan entre sí.
+export function totalBalance(txs: Transaction[], scopeIds: Set<string> | null): number {
+  let total = 0;
+  for (const t of txs) {
+    const fromInScope = scopeIds === null || scopeIds.has(t.account_id);
+    if (t.kind === "income") {
+      if (fromInScope) total += t.amount_cents;
+    } else if (t.kind === "expense") {
+      if (fromInScope) total -= t.amount_cents;
+    } else {
+      const toInScope = scopeIds === null || (t.to_account_id !== null && scopeIds.has(t.to_account_id));
+      if (fromInScope) total -= t.amount_cents;
+      if (toInScope) total += t.amount_cents;
+    }
+  }
+  return total;
+}
+
 export type CategoryTotal = { category: Category; totalCents: number };
 
 export function categoryTotals(expenseTxs: Transaction[], categories: Category[]): CategoryTotal[] {
@@ -95,13 +115,6 @@ export function ownerLabel(account: Account | undefined, members: HouseholdMembe
   if (!account) return "";
   if (account.owner_user_id === null) return "Conjunta";
   return members.find((m) => m.user_id === account.owner_user_id)?.display_name ?? "Miembro";
-}
-
-export function scopeLabel(scope: OwnerScope, members: HouseholdMember[]): string {
-  if (scope === "all") return "Todas las cuentas";
-  if (scope === "j") return "Cuentas de conjunta";
-  const member = scope === "a" ? members[0] : members[1];
-  return `Cuentas de ${member?.display_name ?? "—"}`;
 }
 
 export function movementLabel(tx: Transaction, categories: Category[]): string {

@@ -89,3 +89,16 @@ export async function listTransactionsForYear(
   if (error) throw error;
   return data ?? [];
 }
+
+// Sin filtro de año: usado para el saldo total en cuentas (ver saldo(account)
+// en SCHEMA.sql, sección "reading"), que necesita el histórico completo.
+export async function listAllTransactions(householdId: string): Promise<Transaction[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("household_id", householdId);
+
+  if (error) throw error;
+  return data ?? [];
+}
