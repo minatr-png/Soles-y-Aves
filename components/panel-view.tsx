@@ -33,12 +33,12 @@ type Props = {
 
 function amountNode(tx: Transaction) {
   if (tx.kind === "expense") {
-    return <span className="figure-negative">{signed(-tx.amount_cents, 2)}</span>;
+    return <span>{signed(-tx.amount_cents, 2)}</span>;
   }
   if (tx.kind === "income") {
     return <span className="figure-positive">{signed(tx.amount_cents, 2)}</span>;
   }
-  return <span>{money2(tx.amount_cents)}</span>;
+  return <span className="figure-transfer">{money2(tx.amount_cents)}</span>;
 }
 
 export function PanelView({

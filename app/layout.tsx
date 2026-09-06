@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo } from "next/font/google";
 import "./globals.css";
 
@@ -11,6 +11,16 @@ const archivo = Archivo({
 export const metadata: Metadata = {
   title: "Ahorros",
   description: "Cuentas compartidas",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Ahorros",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#eceaea",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

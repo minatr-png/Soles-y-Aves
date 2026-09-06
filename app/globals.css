@@ -219,6 +219,10 @@ body {
   color: var(--red-deep);
 }
 
+.figure-transfer {
+  color: #7d7979;
+}
+
 /* ----------------------------------------------------------------- Panel */
 
 .month-stepper-btn {

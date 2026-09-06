@@ -191,9 +191,9 @@ export function movementLabel(tx: Transaction, categories: Category[]): string {
 }
 
 export function movementColor(tx: Transaction, categories: Category[]): string {
-  if (tx.kind === "income") return "#1f9c5d";
-  if (tx.kind === "transfer") return "#201e1d";
-  return categories.find((c) => c.id === tx.category_id)?.color ?? "#7d7979";
+  if (tx.kind === "income") return "#201e1d";
+  if (tx.kind === "transfer") return "#9b9797";
+  return categories.find((c) => c.id === tx.category_id)?.color ?? "#9b9797";
 }
 
 export function movementSub(tx: Transaction, accounts: Account[], members: HouseholdMember[]): string {
