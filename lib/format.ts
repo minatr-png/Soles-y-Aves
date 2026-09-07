@@ -1,13 +1,6 @@
 // Formato es-ES para importes en céntimos. `useGrouping:true` es obligatorio:
 // por defecto Intl no agrupa separadores de miles en cifras de 4 dígitos.
 
-const wholeEuros = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-  useGrouping: true,
-});
-
 const centEuros = new Intl.NumberFormat("es-ES", {
   style: "currency",
   currency: "EUR",
@@ -16,20 +9,20 @@ const centEuros = new Intl.NumberFormat("es-ES", {
   useGrouping: true,
 });
 
-// Cifras redondeadas a euros enteros, p. ej. "1.257 €". Ignora el signo.
+// Cifras con dos decimales, p. ej. "1.257,00 €". Ignora el signo.
 export function money(cents: number): string {
-  return wholeEuros.format(Math.abs(cents) / 100);
-}
-
-// Cifras con dos decimales, p. ej. "63,00 €". Ignora el signo.
-export function money2(cents: number): string {
   return centEuros.format(Math.abs(cents) / 100);
 }
 
-// Cifra entera con el signo natural de Intl (p. ej. "-497 €"), sin forzar "+"
-// en positivos. Usada para el saldo de una cuenta, que puede ser negativo.
+// Alias de `money`, mantenido para los usos existentes de dos decimales.
+export function money2(cents: number): string {
+  return money(cents);
+}
+
+// Con el signo natural de Intl (p. ej. "-497,00 €"), sin forzar "+" en
+// positivos. Usada para el saldo de una cuenta, que puede ser negativo.
 export function moneyBalance(cents: number): string {
-  return wholeEuros.format(cents / 100);
+  return centEuros.format(cents / 100);
 }
 
 // Con signo: "+" para positivos (y cero), menos tipográfico "−" para negativos.

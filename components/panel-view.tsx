@@ -77,8 +77,8 @@ export function PanelView({
   const displayMonth = pendingStep?.month ?? month;
 
   function stepTarget(delta: number) {
-    let m = month + delta;
-    let y = year;
+    let m = displayMonth + delta;
+    let y = displayYear;
     if (m < 1) {
       m = 12;
       y -= 1;

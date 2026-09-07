@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Account, Category, HouseholdMember, Transaction } from "@/lib/supabase/types";
 import { money, money2, signed } from "@/lib/format";
@@ -35,7 +35,20 @@ export function AnoView({ year, members, accounts, categories, transactions }: P
   const searchParams = useSearchParams();
   const ownerScope = (searchParams.get("owner") as OwnerScope | null) ?? "all";
 
+  // Marks the target year active immediately so repeated clicks accumulate
+  // instead of each one computing from the same stale `year` prop while the
+  // navigation is still in flight. Reset during render once the URL catches
+  // up to the click.
+  const [prevYear, setPrevYear] = useState(year);
+  const [pendingYear, setPendingYear] = useState<number | null>(null);
+  if (year !== prevYear) {
+    setPrevYear(year);
+    setPendingYear(null);
+  }
+  const displayYear = pendingYear ?? year;
+
   function goYear(newYear: number) {
+    setPendingYear(newYear);
     const params = new URLSearchParams(searchParams.toString());
     params.set("y", String(newYear));
     router.push(`${pathname}?${params.toString()}`);
@@ -80,16 +93,18 @@ export function AnoView({ year, members, accounts, categories, transactions }: P
             type="button"
             className="month-stepper-btn"
             aria-label="Año anterior"
-            onClick={() => goYear(year - 1)}
+            onClick={() => goYear(displayYear - 1)}
           >
             ‹
           </button>
-          <span className="month-stepper-label">{year}</span>
+          <span key={displayYear} className="month-stepper-label stepper-label-animate">
+            {displayYear}
+          </span>
           <button
             type="button"
             className="month-stepper-btn"
             aria-label="Año siguiente"
-            onClick={() => goYear(year + 1)}
+            onClick={() => goYear(displayYear + 1)}
           >
             ›
           </button>
