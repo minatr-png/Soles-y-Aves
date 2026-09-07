@@ -93,7 +93,8 @@ export const listAllTransactions = cache(async (householdId: string): Promise<Tr
   const { data, error } = await supabase
     .from("transactions")
     .select("*")
-    .eq("household_id", householdId);
+    .eq("household_id", householdId)
+    .order("occurred_on", { ascending: false });
 
   if (error) throw error;
   return data ?? [];

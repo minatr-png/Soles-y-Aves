@@ -1,18 +1,13 @@
 import {
   getHousehold,
   listAccounts,
+  listAllTransactions,
   listCategories,
   listMembers,
-  listTransactionsForYear,
 } from "@/lib/data";
 import { MovimientosView } from "@/components/movimientos-view";
 
-export default async function MovimientosPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const params = await searchParams;
+export default async function MovimientosPage() {
   const household = await getHousehold();
 
   if (!household) {
@@ -26,14 +21,11 @@ export default async function MovimientosPage({
     );
   }
 
-  const yParam = Array.isArray(params.y) ? params.y[0] : params.y;
-  const year = yParam ? Number(yParam) : new Date().getFullYear();
-
   const [members, accounts, categories, transactions] = await Promise.all([
     listMembers(household.id),
     listAccounts(household.id),
     listCategories(household.id),
-    listTransactionsForYear(household.id, year),
+    listAllTransactions(household.id),
   ]);
 
   return (

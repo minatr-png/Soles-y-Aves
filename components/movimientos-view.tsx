@@ -5,10 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Account, Category, HouseholdMember, MovementKind, Transaction } from "@/lib/supabase/types";
 import { money2, signed } from "@/lib/format";
 import {
-  formatMonthLabel,
   formatShortDateWithYear,
   isTransactionInScope,
-  monthKey,
   movementColor,
   movementLabel,
   movementSub,
@@ -34,11 +32,6 @@ const TYPE_OPTIONS: { value: "all" | MovementKind; label: string }[] = [
 
 const MAX_ROWS = 300;
 
-function currentMonthKey(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
 function amountNode(tx: Transaction) {
   if (tx.kind === "expense") {
     return <span>{signed(-tx.amount_cents, 2)}</span>;
@@ -62,7 +55,8 @@ export function MovimientosView({ members, accounts, categories, transactions }:
   const ownerScope = (searchParams.get("owner") as OwnerScope | null) ?? "all";
   const typeParam = (searchParams.get("t") as MovementKind | "all" | null) ?? "all";
   const catParam = searchParams.get("cat") ?? "all";
-  const monthParam = searchParams.get("mm") ?? currentMonthKey();
+  const fromParam = searchParams.get("from") ?? "";
+  const toParam = searchParams.get("to") ?? "";
 
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -71,15 +65,6 @@ export function MovimientosView({ members, accounts, categories, transactions }:
     } else {
       params.set(key, value);
     }
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname);
-  }
-
-  // "mm" defaults to the current month rather than "all", so unlike setParam
-  // above, "all" must be written explicitly instead of clearing the param.
-  function setMonthParam(value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("mm", value);
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
@@ -99,18 +84,13 @@ export function MovimientosView({ members, accounts, categories, transactions }:
     [transactions, scopeIds, deletedIds],
   );
 
-  const monthOptions = useMemo(() => {
-    const keys = new Set(scopedTx.map((t) => monthKey(t.occurred_on)));
-    keys.add(currentMonthKey());
-    return [...keys].sort().reverse();
-  }, [scopedTx]);
-
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     return scopedTx.filter((t) => {
       if (typeParam !== "all" && t.kind !== typeParam) return false;
       if (catParam !== "all" && t.category_id !== catParam) return false;
-      if (monthParam !== "all" && monthKey(t.occurred_on) !== monthParam) return false;
+      if (fromParam && t.occurred_on < fromParam) return false;
+      if (toParam && t.occurred_on > toParam) return false;
       if (q) {
         const label = movementLabel(t, categories).toLowerCase();
         const note = t.note.toLowerCase();
@@ -118,7 +98,7 @@ export function MovimientosView({ members, accounts, categories, transactions }:
       }
       return true;
     });
-  }, [scopedTx, typeParam, catParam, monthParam, searchText, categories]);
+  }, [scopedTx, typeParam, catParam, fromParam, toParam, searchText, categories]);
 
   const summarySum = useMemo(
     () =>
@@ -184,18 +164,23 @@ export function MovimientosView({ members, accounts, categories, transactions }:
           ))}
         </select>
 
-        <select
+        <input
+          type="date"
           className="filter-control"
-          value={monthParam}
-          onChange={(e) => setMonthParam(e.target.value)}
-        >
-          <option value="all">Todos los meses</option>
-          {monthOptions.map((key) => (
-            <option key={key} value={key}>
-              {formatMonthLabel(key)}
-            </option>
-          ))}
-        </select>
+          aria-label="Desde"
+          value={fromParam}
+          max={toParam || undefined}
+          onChange={(e) => setParam("from", e.target.value)}
+        />
+
+        <input
+          type="date"
+          className="filter-control"
+          aria-label="Hasta"
+          value={toParam}
+          min={fromParam || undefined}
+          onChange={(e) => setParam("to", e.target.value)}
+        />
 
         <input
           className="filter-control filter-search"
