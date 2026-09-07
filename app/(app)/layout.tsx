@@ -1,16 +1,37 @@
+import { Suspense } from "react";
 import { getHousehold, listAccounts, listCategories, listMembers } from "@/lib/data";
 import { ChromeHeader } from "@/components/chrome-header";
-import { MovementSheetProvider } from "@/components/movement-sheet";
+import { MovementSheetProvider, type MovementSheetData } from "@/components/movement-sheet";
+import type { Household } from "@/lib/supabase/types";
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const household = await getHousehold();
-  const [members, accounts, categories] = household
-    ? await Promise.all([
-        listMembers(household.id),
-        listAccounts(household.id),
-        listCategories(household.id),
-      ])
-    : [[], [], []];
+async function getMovementSheetData(
+  householdPromise: Promise<Household | null>,
+): Promise<MovementSheetData | null> {
+  const household = await householdPromise;
+  if (!household) return null;
+
+  const [accounts, categories, members] = await Promise.all([
+    listAccounts(household.id),
+    listCategories(household.id),
+    listMembers(household.id),
+  ]);
+
+  return { householdId: household.id, accounts, categories, members };
+}
+
+async function ChromeHeaderAsync({
+  householdPromise,
+}: {
+  householdPromise: Promise<Household | null>;
+}) {
+  const household = await householdPromise;
+  const members = household ? await listMembers(household.id) : [];
+  return <ChromeHeader members={members} />;
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const householdPromise = getHousehold();
+  const movementDataPromise = getMovementSheetData(householdPromise);
 
   return (
     <>
@@ -20,20 +41,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="blob blob-salmon" />
       </div>
 
-      <ChromeHeader members={members} />
+      <Suspense fallback={<ChromeHeader members={[]} />}>
+        <ChromeHeaderAsync householdPromise={householdPromise} />
+      </Suspense>
 
-      {household ? (
-        <MovementSheetProvider
-          householdId={household.id}
-          accounts={accounts}
-          categories={categories}
-          members={members}
-        >
-          <main className="content-column">{children}</main>
-        </MovementSheetProvider>
-      ) : (
+      <MovementSheetProvider dataPromise={movementDataPromise}>
         <main className="content-column">{children}</main>
-      )}
+      </MovementSheetProvider>
     </>
   );
 }
