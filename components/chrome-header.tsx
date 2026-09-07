@@ -1,21 +1,10 @@
 "use client";
 
-import Link, { useLinkStatus } from "next/link";
+import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { HouseholdMember } from "@/lib/supabase/types";
-
-// Reports whether the <Link> it's nested in is still navigating, so the
-// parent can surface a loading toast instead of the filter silently doing
-// nothing for however long the fetch takes.
-function FilterLinkStatus({ value, onPendingChange }: { value: string; onPendingChange: (value: string, pending: boolean) => void }) {
-  const { pending } = useLinkStatus();
-  useEffect(() => {
-    onPendingChange(value, pending);
-    return () => onPendingChange(value, false);
-  }, [value, pending, onPendingChange]);
-  return null;
-}
+import { LinkPendingWatcher } from "@/components/link-pending-watcher";
 
 const TABS = [
   { href: "/", label: "Panel" },
@@ -187,7 +176,7 @@ export function ChromeHeader({ members }: Props) {
                 onClick={() => setPendingOwner(option.value)}
               >
                 {option.label}
-                <FilterLinkStatus value={option.value} onPendingChange={handlePendingChange} />
+                <LinkPendingWatcher id={option.value} onPendingChange={handlePendingChange} />
               </Link>
             ))}
           </div>

@@ -34,6 +34,11 @@ const TYPE_OPTIONS: { value: "all" | MovementKind; label: string }[] = [
 
 const MAX_ROWS = 300;
 
+function currentMonthKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function amountNode(tx: Transaction) {
   if (tx.kind === "expense") {
     return <span>{signed(-tx.amount_cents, 2)}</span>;
@@ -57,7 +62,7 @@ export function MovimientosView({ members, accounts, categories, transactions }:
   const ownerScope = (searchParams.get("owner") as OwnerScope | null) ?? "all";
   const typeParam = (searchParams.get("t") as MovementKind | "all" | null) ?? "all";
   const catParam = searchParams.get("cat") ?? "all";
-  const monthParam = searchParams.get("mm") ?? "all";
+  const monthParam = searchParams.get("mm") ?? currentMonthKey();
 
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -66,6 +71,15 @@ export function MovimientosView({ members, accounts, categories, transactions }:
     } else {
       params.set(key, value);
     }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  // "mm" defaults to the current month rather than "all", so unlike setParam
+  // above, "all" must be written explicitly instead of clearing the param.
+  function setMonthParam(value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("mm", value);
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
@@ -87,6 +101,7 @@ export function MovimientosView({ members, accounts, categories, transactions }:
 
   const monthOptions = useMemo(() => {
     const keys = new Set(scopedTx.map((t) => monthKey(t.occurred_on)));
+    keys.add(currentMonthKey());
     return [...keys].sort().reverse();
   }, [scopedTx]);
 
@@ -172,7 +187,7 @@ export function MovimientosView({ members, accounts, categories, transactions }:
         <select
           className="filter-control"
           value={monthParam}
-          onChange={(e) => setParam("mm", e.target.value)}
+          onChange={(e) => setMonthParam(e.target.value)}
         >
           <option value="all">Todos los meses</option>
           {monthOptions.map((key) => (

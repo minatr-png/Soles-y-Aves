@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import { LinkPendingWatcher } from "@/components/link-pending-watcher";
 import type { Account, Category, HouseholdMember, Transaction } from "@/lib/supabase/types";
 import { money, money2, signed } from "@/lib/format";
 import {
@@ -49,10 +51,11 @@ export function PanelView({
   transactions,
   allTransactions,
 }: Props) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [notesOpen, setNotesOpen] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(year);
 
   const now = new Date();
   const isCurrentYear = year === now.getFullYear();
@@ -60,14 +63,20 @@ export function PanelView({
   const month = mParam ? Number(mParam) : isCurrentYear ? now.getMonth() + 1 : 12;
   const ownerScope = (searchParams.get("owner") as OwnerScope | null) ?? "all";
 
-  function go(newYear: number, newMonth: number) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("y", String(newYear));
-    params.set("m", String(newMonth));
-    router.push(`${pathname}?${params.toString()}`);
+  // Marks the target month active immediately, instead of waiting for the
+  // navigation (and whatever data it depends on) to actually complete. Reset
+  // during render (not an effect) once the URL catches up to the click.
+  const monthKey = `${year}-${month}`;
+  const [prevMonthKey, setPrevMonthKey] = useState(monthKey);
+  const [pendingStep, setPendingStep] = useState<{ year: number; month: number } | null>(null);
+  if (monthKey !== prevMonthKey) {
+    setPrevMonthKey(monthKey);
+    setPendingStep(null);
   }
+  const displayYear = pendingStep?.year ?? year;
+  const displayMonth = pendingStep?.month ?? month;
 
-  function stepMonth(delta: number) {
+  function stepTarget(delta: number) {
     let m = month + delta;
     let y = year;
     if (m < 1) {
@@ -77,8 +86,38 @@ export function PanelView({
       m = 1;
       y += 1;
     }
-    go(y, m);
+    return { year: y, month: m };
   }
+
+  function monthHref(y: number, m: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("y", String(y));
+    params.set("m", String(m));
+    return `${pathname}?${params.toString()}`;
+  }
+
+  function stepHref(delta: number) {
+    const { year: y, month: m } = stepTarget(delta);
+    return monthHref(y, m);
+  }
+
+  function openPicker() {
+    setPickerYear(displayYear);
+    setPickerOpen(true);
+  }
+
+  const [pendingLinks, setPendingLinks] = useState<Set<string>>(new Set());
+  const handlePendingChange = useCallback((id: string, pending: boolean) => {
+    setPendingLinks((prev) => {
+      const isPending = prev.has(id);
+      if (pending === isPending) return prev;
+      const next = new Set(prev);
+      if (pending) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+  const isMonthLoading = pendingLinks.size > 0;
 
   const scopeIds = useMemo(
     () => scopedAccountIds(accounts, members, ownerScope),
@@ -130,25 +169,33 @@ export function PanelView({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <button
-            type="button"
+          <Link
+            href={stepHref(-1)}
             className="month-stepper-btn"
             aria-label="Mes anterior"
-            onClick={() => stepMonth(-1)}
+            onClick={() => setPendingStep(stepTarget(-1))}
           >
-            ‹
-          </button>
-          <span className="month-stepper-label">
-            {MONTHS_FULL[month - 1]} {year}
-          </span>
+            ‹<LinkPendingWatcher id="prev" onPendingChange={handlePendingChange} />
+          </Link>
           <button
             type="button"
+            className="month-stepper-label month-stepper-label-btn"
+            onClick={openPicker}
+            aria-haspopup="dialog"
+            aria-expanded={pickerOpen}
+          >
+            <span key={`${displayYear}-${displayMonth}`} className="stepper-label-animate">
+              {MONTHS_FULL[displayMonth - 1]} {displayYear}
+            </span>
+          </button>
+          <Link
+            href={stepHref(1)}
             className="month-stepper-btn"
             aria-label="Mes siguiente"
-            onClick={() => stepMonth(1)}
+            onClick={() => setPendingStep(stepTarget(1))}
           >
-            ›
-          </button>
+            ›<LinkPendingWatcher id="next" onPendingChange={handlePendingChange} />
+          </Link>
         </div>
         <div className="ml-auto flex items-baseline gap-2">
           <span className="kicker">Dinero total</span>
@@ -274,6 +321,79 @@ export function PanelView({
           ))
         )}
       </div>
+
+      <div className="filter-loading-toast" data-visible={isMonthLoading} role="status" aria-live="polite">
+        <span className="filter-loading-spinner" aria-hidden />
+        Actualizando…
+      </div>
+
+      {pickerOpen && (
+        <div className="sheet-veil" onClick={() => setPickerOpen(false)}>
+          <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-handle">
+              <span className="sheet-handle-bar" />
+            </div>
+            <div className="sheet-header">
+              <p className="sheet-title">Elegir mes</p>
+              <button
+                type="button"
+                className="sheet-close"
+                aria-label="Cerrar"
+                onClick={() => setPickerOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="month-picker-year-row">
+              <button
+                type="button"
+                className="month-stepper-btn"
+                aria-label="Año anterior"
+                onClick={() => setPickerYear((y) => y - 1)}
+              >
+                ‹
+              </button>
+              <span className="month-picker-year-label">{pickerYear}</span>
+              <button
+                type="button"
+                className="month-stepper-btn"
+                aria-label="Año siguiente"
+                onClick={() => setPickerYear((y) => y + 1)}
+              >
+                ›
+              </button>
+            </div>
+
+            <div className="month-picker-grid">
+              {MONTHS_FULL.map((label, i) => {
+                const m = i + 1;
+                const isSelected = pickerYear === year && m === month;
+                const isCurrent = pickerYear === now.getFullYear() && m === now.getMonth() + 1;
+                return (
+                  <Link
+                    key={label}
+                    href={monthHref(pickerYear, m)}
+                    className="month-picker-cell"
+                    data-active={isSelected}
+                    data-current={isCurrent}
+                    onClick={() => {
+                      setPendingStep({ year: pickerYear, month: m });
+                      setPickerOpen(false);
+                    }}
+                  >
+                    {label}
+                    <LinkPendingWatcher
+                      id={`picker-${pickerYear}-${m}`}
+                      onPendingChange={handlePendingChange}
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
