@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { getHousehold, listAccounts, listCategories, listMembers } from "@/lib/data";
-import { ChromeHeader } from "@/components/chrome-header";
+import { ChromeHeader, ChromeHeaderFallback } from "@/components/chrome-header";
 import { MovementSheetProvider, type MovementSheetData } from "@/components/movement-sheet";
 import type { Household } from "@/lib/supabase/types";
 
@@ -41,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="blob blob-salmon" />
       </div>
 
-      <Suspense fallback={<ChromeHeader members={[]} />}>
+      <Suspense fallback={<ChromeHeaderFallback />}>
         <ChromeHeaderAsync householdPromise={householdPromise} />
       </Suspense>
 

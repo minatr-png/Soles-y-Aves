@@ -28,6 +28,43 @@ type Props = {
   members: HouseholdMember[];
 };
 
+// Static placeholder for the Suspense boundary in the layout. Must not read
+// useSearchParams/usePathname: as the *fallback* it has no Suspense boundary
+// of its own above it, so if it bailed to CSR too, the build would fail with
+// "missing suspense boundary" instead of just showing this shell.
+export function ChromeHeaderFallback() {
+  const personOptions = ["Todo", "Miembro 1", "Miembro 2", "Conjunta"];
+
+  return (
+    <>
+      <header className="app-header">
+        <div className="app-header-inner">
+          <div className="brand-group">
+            <span className="brand-mark" aria-hidden />
+            <span className="brand-name">Ahorros</span>
+          </div>
+
+          <div className="person-filter" role="group" aria-label="Filtro de personas">
+            {personOptions.map((label) => (
+              <span key={label} className="person-filter-btn">
+                {label}
+              </span>
+            ))}
+          </div>
+
+          <nav className="tab-bar" aria-label="Secciones">
+            {TABS.map((tab) => (
+              <span key={tab.href} className="tab-link">
+                {tab.label}
+              </span>
+            ))}
+          </nav>
+        </div>
+      </header>
+    </>
+  );
+}
+
 export function ChromeHeader({ members }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
