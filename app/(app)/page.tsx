@@ -49,7 +49,7 @@ export default async function PanelPage({
         transactions={transactions}
         allTransactions={allTransactions}
       />
-      <form action={signOut}>
+      <form action={signOut} className="text-center">
         <button type="submit" className="text-sm underline">
           Cerrar sesión
         </button>
