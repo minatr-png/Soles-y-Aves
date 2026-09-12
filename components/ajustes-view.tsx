@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Account, Category, HouseholdMember, Transaction } from "@/lib/supabase/types";
 import { moneyBalance } from "@/lib/format";
@@ -13,6 +13,7 @@ import {
   renameAccount,
   renameCategory,
   updateAccountOwner,
+  updateCategoryColor,
 } from "@/lib/mutations";
 import { signOut } from "@/app/actions";
 
@@ -29,22 +30,18 @@ const DEFAULT_COLOR = "#ec3013";
 export function AjustesView({ householdId, members, accounts, categories, transactions }: Props) {
   const router = useRouter();
 
-  const [catNames, setCatNames] = useState<Record<string, string>>({});
-  const [accNames, setAccNames] = useState<Record<string, string>>({});
+  const [catNames, setCatNames] = useState<Record<string, string>>(() =>
+    Object.fromEntries(categories.map((c) => [c.id, c.name])),
+  );
+  const [accNames, setAccNames] = useState<Record<string, string>>(() =>
+    Object.fromEntries(accounts.map((a) => [a.id, a.name])),
+  );
   const [newCatName, setNewCatName] = useState("");
   const [newCatColor, setNewCatColor] = useState(DEFAULT_COLOR);
   const [newAccName, setNewAccName] = useState("");
   const [newAccOwner, setNewAccOwner] = useState(members[0]?.user_id ?? "");
   const [catError, setCatError] = useState<string | null>(null);
   const [accError, setAccError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setCatNames(Object.fromEntries(categories.map((c) => [c.id, c.name])));
-  }, [categories]);
-
-  useEffect(() => {
-    setAccNames(Object.fromEntries(accounts.map((a) => [a.id, a.name])));
-  }, [accounts]);
 
   const ownerOptions = [
     ...members.map((m) => ({ value: m.user_id, label: m.display_name ?? "Miembro" })),
@@ -79,6 +76,17 @@ export function AjustesView({ householdId, members, accounts, categories, transa
     } catch {
       setCatNames((prev) => ({ ...prev, [category.id]: category.name }));
       setCatError("No se ha podido renombrar la categoría.");
+    }
+  }
+
+  async function handleCatColorChange(category: Category, color: string) {
+    if (!color || color === category.color) return;
+    setCatError(null);
+    try {
+      await updateCategoryColor(category.id, color);
+      router.refresh();
+    } catch {
+      setCatError("No se ha podido cambiar el color de la categoría.");
     }
   }
 
@@ -149,7 +157,8 @@ export function AjustesView({ householdId, members, accounts, categories, transa
       <div className="glass-card">
         <h2 className="settings-card-title">Categorías</h2>
         <p className="settings-help">
-          Elige el color al crearla. Solo se pueden borrar las que no tengan movimientos.
+          Elige el color al crearla o cámbialo en cada fila. Solo se pueden borrar las que no
+          tengan movimientos.
         </p>
 
         <form className="create-row" onSubmit={handleCreateCategory}>
@@ -178,7 +187,13 @@ export function AjustesView({ householdId, members, accounts, categories, transa
             const usage = categoryUsageCount(category.id, transactions);
             return (
               <div key={category.id} className="category-row">
-                <span className="category-swatch" style={{ background: category.color }} />
+                <input
+                  type="color"
+                  className="color-input"
+                  value={category.color}
+                  onChange={(e) => handleCatColorChange(category, e.target.value)}
+                  aria-label={`Color de ${category.name}`}
+                />
                 <input
                   className="category-name-input"
                   value={catNames[category.id] ?? category.name}

@@ -38,8 +38,7 @@ export async function createTransaction(
   return data;
 }
 
-// Se crea con color a elección; una vez creada la categoría no se recolorea
-// (ver README, sección "Categorías y cuentas").
+// Se crea con color a elección y puede cambiarse después.
 export async function createCategory(
   householdId: string,
   name: string,
@@ -60,6 +59,12 @@ export async function createCategory(
 export async function renameCategory(id: string, name: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase.from("categories").update({ name }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateCategoryColor(id: string, color: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from("categories").update({ color }).eq("id", id);
   if (error) throw error;
 }
 

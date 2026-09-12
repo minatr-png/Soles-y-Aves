@@ -55,11 +55,37 @@ function emptyForm(): FormState {
   };
 }
 
+function normalizeAmountInput(value: string): string {
+  const sanitized = value.replace(/[^\d,.-]/g, "");
+  if (!sanitized) return "";
+
+  const normalized = sanitized.replace(",", ".");
+  const pieces = normalized.split(".");
+
+  if (pieces.length > 2) {
+    return `${pieces[0]}.${pieces.slice(1).join("")}`;
+  }
+
+  if (normalized === "." || normalized === "-") return "";
+
+  return normalized;
+}
+
+function finalizeAmountInput(value: string): string {
+  const normalized = normalizeAmountInput(value);
+  if (!normalized) return "";
+
+  const numeric = Number(normalized);
+  if (!Number.isFinite(numeric)) return "";
+
+  return `${numeric.toFixed(2)}€`;
+}
+
 function formFromTransaction(tx: Transaction): FormState {
   return {
     id: tx.id,
     kind: tx.kind,
-    amount: (tx.amount_cents / 100).toFixed(2).replace(".", ","),
+    amount: finalizeAmountInput((tx.amount_cents / 100).toFixed(2)),
     date: tx.occurred_on,
     accountId: tx.account_id,
     toAccountId: tx.to_account_id ?? "",
@@ -185,8 +211,9 @@ function SheetForm({ dataPromise, form, onFormChange, onClose }: SheetFormProps)
       return;
     }
 
-    const amount = Number(form.amount.trim().replace(",", "."));
-    if (!Number.isFinite(amount) || amount <= 0) {
+    const rawAmount = form.amount.trim();
+    const amount = Number(rawAmount.replace(/€/g, "").replace(",", "."));
+    if (!rawAmount || !Number.isFinite(amount) || amount <= 0) {
       setError("Introduce un importe válido.");
       return;
     }
@@ -281,9 +308,17 @@ function SheetForm({ dataPromise, form, onFormChange, onClose }: SheetFormProps)
             <input
               className="field-control field-amount"
               inputMode="decimal"
-              placeholder="0,00"
+              placeholder="0.00€"
               value={form.amount}
-              onChange={(e) => onFormChange({ ...form, amount: e.target.value })}
+              onFocus={() => {
+                if (form.amount.endsWith("€")) {
+                  onFormChange({ ...form, amount: form.amount.replace(/€/g, "") });
+                }
+              }}
+              onBlur={() => {
+                onFormChange({ ...form, amount: finalizeAmountInput(form.amount) });
+              }}
+              onChange={(e) => onFormChange({ ...form, amount: normalizeAmountInput(e.target.value) })}
             />
           </label>
 

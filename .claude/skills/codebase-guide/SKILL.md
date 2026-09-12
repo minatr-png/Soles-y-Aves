@@ -140,8 +140,8 @@ a replacement for it — the two must stay in sync (see "Keeping this file curre
 - `Household { id, name, created_at }`
 - `HouseholdMember { household_id, user_id, display_name, joined_at }`
 - `Account { id, household_id, name, owner_user_id (nullable ⇒ joint/"Conjunta"), archived, sort_order, created_at }`
-- `Category { id, household_id, name, color, archived, sort_order, created_at }` — color is chosen once
-  at creation and never recolored (a UI convention, not a DB constraint)
+- `Category { id, household_id, name, color, archived, sort_order, created_at }` — color is editable
+  after creation and is treated as part of the category metadata, not a one-time choice
 - `Transaction { id, household_id, kind, amount_cents, occurred_on, account_id, to_account_id, category_id, note, created_by, created_at, updated_at }`
   - `kind: MovementKind = "expense" | "income" | "transfer"`
   - `amount_cents` is **always positive** — `kind` alone carries direction
