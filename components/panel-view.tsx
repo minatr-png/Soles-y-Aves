@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { LinkPendingWatcher } from "@/components/link-pending-watcher";
+import { BlurredAmount } from "@/components/blurred-amount";
 import type { Account, Category, HouseholdMember, Transaction } from "@/lib/supabase/types";
 import { money, money2, signed } from "@/lib/format";
 import {
@@ -35,7 +36,9 @@ type Props = {
 
 function amountNode(tx: Transaction) {
   if (tx.kind === "expense") {
-    return <span>{signed(-tx.amount_cents, 2)}</span>;
+    return (
+      <BlurredAmount categoryId={tx.category_id}>{signed(-tx.amount_cents, 2)}</BlurredAmount>
+    );
   }
   if (tx.kind === "income") {
     return <span className="figure-positive">{signed(tx.amount_cents, 2)}</span>;
@@ -250,7 +253,9 @@ export function PanelView({
                     <span className="ranking-chip" style={{ background: category.color }} />
                     <span className="truncate">{category.name}</span>
                   </div>
-                  <span className="ranking-amount">{money2(totalCents)}</span>
+                  <span className="ranking-amount">
+                    <BlurredAmount categoryId={category.id}>{money2(totalCents)}</BlurredAmount>
+                  </span>
                   <div className="ranking-track-row">
                     <div className="ranking-track">
                       <div

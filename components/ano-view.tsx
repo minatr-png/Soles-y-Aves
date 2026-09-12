@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Account, Category, HouseholdMember, Transaction } from "@/lib/supabase/types";
 import { money, money2, signed } from "@/lib/format";
+import { BlurredAmount, isBlurredCategoryId } from "@/components/blurred-amount";
 import {
   MONTHS_FULL,
   MONTHS_SHORT,
@@ -224,11 +225,16 @@ export function AnoView({ year, members, accounts, categories, transactions }: P
                 </div>
                 {row.monthly.map((amount, i) => {
                   const ratio = amount / heatMax;
+                  const blurred = isBlurredCategoryId(row.category.id);
                   return (
                     <div
                       key={i}
                       className="heat-cell"
-                      title={`${row.category.name} · ${MONTHS_FULL[i]}: ${money2(amount)}`}
+                      title={
+                        blurred
+                          ? `${row.category.name} · ${MONTHS_FULL[i]}`
+                          : `${row.category.name} · ${MONTHS_FULL[i]}: ${money2(amount)}`
+                      }
                       style={{
                         background: amount
                           ? `rgba(236,48,19,${(0.1 + ratio * 0.82).toFixed(3)})`
@@ -236,11 +242,19 @@ export function AnoView({ year, members, accounts, categories, transactions }: P
                         color: ratio > 0.55 ? "#fff2ef" : "#201e1d",
                       }}
                     >
-                      {amount ? Math.round(amount / 100) : ""}
+                      {amount ? (
+                        <BlurredAmount categoryId={row.category.id}>
+                          {Math.round(amount / 100)}
+                        </BlurredAmount>
+                      ) : (
+                        ""
+                      )}
                     </div>
                   );
                 })}
-                <span className="heat-row-total">{money(row.total)}</span>
+                <span className="heat-row-total">
+                  <BlurredAmount categoryId={row.category.id}>{money(row.total)}</BlurredAmount>
+                </span>
               </div>
             ))}
           </div>

@@ -334,6 +334,29 @@ body {
   color: #7d7979;
 }
 
+.blur-amount {
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 6px;
+  filter: blur(4px);
+  transition: filter 0.15s ease;
+}
+
+.blur-amount:hover {
+  filter: blur(3px);
+}
+
+.blur-amount-revealed,
+.blur-amount-revealed:hover {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blur-amount {
+    transition: none;
+  }
+}
+
 /* ----------------------------------------------------------------- Panel */
 
 .month-stepper-btn {

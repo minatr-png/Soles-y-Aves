@@ -14,6 +14,7 @@ import {
   type OwnerScope,
 } from "@/lib/derive";
 import { useMovementSheet } from "@/components/movement-sheet";
+import { BlurredAmount } from "@/components/blurred-amount";
 import { deleteTransaction } from "@/lib/mutations";
 
 type Props = {
@@ -34,7 +35,9 @@ const MAX_ROWS = 300;
 
 function amountNode(tx: Transaction) {
   if (tx.kind === "expense") {
-    return <span>{signed(-tx.amount_cents, 2)}</span>;
+    return (
+      <BlurredAmount categoryId={tx.category_id}>{signed(-tx.amount_cents, 2)}</BlurredAmount>
+    );
   }
   if (tx.kind === "income") {
     return <span className="figure-positive">{signed(tx.amount_cents, 2)}</span>;
