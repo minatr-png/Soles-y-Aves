@@ -72,9 +72,11 @@ export function PanelView({
   const monthKey = `${year}-${month}`;
   const [prevMonthKey, setPrevMonthKey] = useState(monthKey);
   const [pendingStep, setPendingStep] = useState<{ year: number; month: number } | null>(null);
+  const [pickerPendingKey, setPickerPendingKey] = useState<string | null>(null);
   if (monthKey !== prevMonthKey) {
     setPrevMonthKey(monthKey);
     setPendingStep(null);
+    setPickerPendingKey(null);
   }
   const displayYear = pendingStep?.year ?? year;
   const displayMonth = pendingStep?.month ?? month;
@@ -120,7 +122,7 @@ export function PanelView({
       return next;
     });
   }, []);
-  const isMonthLoading = pendingLinks.size > 0;
+  const isMonthLoading = pendingLinks.size > 0 || pickerPendingKey !== null;
 
   const scopeIds = useMemo(
     () => scopedAccountIds(accounts, members, ownerScope),
@@ -383,7 +385,9 @@ export function PanelView({
                     data-active={isSelected}
                     data-current={isCurrent}
                     onClick={() => {
+                      const key = `${pickerYear}-${m}`;
                       setPendingStep({ year: pickerYear, month: m });
+                      setPickerPendingKey(key);
                       setPickerOpen(false);
                     }}
                   >
