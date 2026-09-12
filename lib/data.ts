@@ -79,7 +79,10 @@ export const listTransactionsForYear = cache(
       .eq("household_id", householdId)
       .gte("occurred_on", `${year}-01-01`)
       .lt("occurred_on", `${year + 1}-01-01`)
-      .order("occurred_on", { ascending: false });
+      // occurred_on has no time component (a movement happens on a day, not
+      // at an instant), so created_at breaks ties among same-day movements.
+      .order("occurred_on", { ascending: false })
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return data ?? [];
@@ -94,7 +97,9 @@ export const listAllTransactions = cache(async (householdId: string): Promise<Tr
     .from("transactions")
     .select("*")
     .eq("household_id", householdId)
-    .order("occurred_on", { ascending: false });
+    // See listTransactionsForYear: created_at breaks same-day ties.
+    .order("occurred_on", { ascending: false })
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
   return data ?? [];
