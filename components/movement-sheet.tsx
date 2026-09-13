@@ -251,7 +251,7 @@ function SheetForm({ dataPromise, form, onFormChange, onClose }: SheetFormProps)
       closeSheet();
       if (pathname === "/") {
         const [year, month] = form.date.split("-");
-        router.push(`/?y=${year}&m=${Number(month)}`);
+        router.push(`/?y=${year}&m=${Number(month)}`, { scroll: false });
       }
       router.refresh();
     } catch {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Account, Category, HouseholdMember, Transaction } from "@/lib/supabase/types";
 import { money, money2, signed } from "@/lib/format";
@@ -85,6 +85,16 @@ export function AnoView({ year, members, accounts, categories, transactions }: P
     [scopedExpenseTx, categories, year],
   );
   const heatMax = Math.max(1, ...heatRows.flatMap((r) => r.monthly));
+
+  // Restores the heat grid's horizontal scroll position after a full page
+  // reload — sessionStorage survives refresh but not a new tab/session.
+  const heatGridRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = heatGridRef.current;
+    if (!el) return;
+    const saved = sessionStorage.getItem("ano-heat-grid-scroll");
+    if (saved) el.scrollLeft = Number(saved);
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">
@@ -206,7 +216,11 @@ export function AnoView({ year, members, accounts, categories, transactions }: P
           <p className="text-[11px] font-medium text-[rgba(32,30,29,.45)]">más rojo, más gasto</p>
         </div>
 
-        <div className="heat-grid-wrap">
+        <div
+          ref={heatGridRef}
+          className="heat-grid-wrap"
+          onScroll={(e) => sessionStorage.setItem("ano-heat-grid-scroll", String(e.currentTarget.scrollLeft))}
+        >
           <div className="heat-grid-inner">
             <div className="heat-grid-row">
               <span className="heat-grid-head-name" />
