@@ -1274,6 +1274,20 @@ body {
   text-align: right;
 }
 
+.heat-grid-head-name,
+.heat-row-name {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  height: 38px;
+  margin: -2px 6px -2px 0;
+  background: var(--glass-bg);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 4px 0 6px -4px rgba(32, 30, 29, 0.25);
+}
+
 .heat-row-name {
   display: flex;
   align-items: center;
@@ -1281,6 +1295,17 @@ body {
   min-width: 0;
   font-size: 13px;
   font-weight: 600;
+  padding-right: 4px;
+}
+
+.heat-grid-head-name {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.heat-grid-row:last-child .heat-row-name {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .heat-cell {

@@ -209,7 +209,7 @@ export function AnoView({ year, members, accounts, categories, transactions }: P
         <div className="heat-grid-wrap">
           <div className="heat-grid-inner">
             <div className="heat-grid-row">
-              <span />
+              <span className="heat-grid-head-name" />
               {MONTHS_SHORT.map((label) => (
                 <span key={label} className="heat-grid-head-cell">
                   {label}
