@@ -9,6 +9,7 @@ import type { Account, Category, HouseholdMember, Transaction } from "@/lib/supa
 import { money, money2, signed } from "@/lib/format";
 import {
   MONTHS_FULL,
+  accountBalance,
   balanceOf,
   buildDonutGradient,
   categoryTotals,
@@ -19,6 +20,7 @@ import {
   movementColor,
   movementLabel,
   movementSub,
+  ownerLabel,
   scopedAccountIds,
   sumByKind,
   totalBalance,
@@ -58,6 +60,7 @@ export function PanelView({
   const searchParams = useSearchParams();
   const [notesOpen, setNotesOpen] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [accountsOpen, setAccountsOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(year);
 
   const now = new Date();
@@ -153,6 +156,17 @@ export function PanelView({
     [allTransactions, scopeIds],
   );
 
+  // Desglose del dinero total por cuenta, con el mismo alcance (filtro de
+  // persona) que el total: si una cuenta no cuenta para el total, tampoco
+  // aparece aquí.
+  const scopedAccountBalances = useMemo(
+    () =>
+      accounts
+        .filter((a) => scopeIds === null || scopeIds.has(a.id))
+        .map((a) => ({ account: a, balanceCents: accountBalance(a.id, allTransactions) })),
+    [accounts, scopeIds, allTransactions],
+  );
+
   const catTotals = useMemo(
     () => categoryTotals(monthExpenseTx, categories),
     [monthExpenseTx, categories],
@@ -202,12 +216,56 @@ export function PanelView({
             ›<LinkPendingWatcher id="next" onPendingChange={handlePendingChange} />
           </Link>
         </div>
-        <div className="ml-auto flex items-baseline gap-2">
-          <span className="kicker">Dinero total</span>
-          <span className={`text-base font-extrabold ${totalMoney < 0 ? "figure-negative" : ""}`}>
-            {totalMoney < 0 ? "−" : ""}
-            {money(totalMoney)}
-          </span>
+        <div className="total-money-wrap">
+          <button
+            type="button"
+            className="total-money-btn"
+            onClick={() => setAccountsOpen((v) => !v)}
+            aria-haspopup="dialog"
+            aria-expanded={accountsOpen}
+          >
+            <span className="kicker">Dinero total</span>
+            <span className={`text-base font-extrabold ${totalMoney < 0 ? "figure-negative" : ""}`}>
+              {totalMoney < 0 ? "−" : ""}
+              {money(totalMoney)}
+            </span>
+          </button>
+
+          {accountsOpen && (
+            <>
+              <div className="pop-veil" onClick={() => setAccountsOpen(false)} />
+              <div className="accounts-pop" role="dialog" aria-label="Dinero por cuenta">
+                <p className="kicker">Dinero por cuenta</p>
+                {scopedAccountBalances.length === 0 ? (
+                  <p className="accounts-pop-empty">No hay cuentas en este filtro.</p>
+                ) : (
+                  <div className="accounts-pop-list">
+                    {scopedAccountBalances.map(({ account, balanceCents }) => (
+                      <div key={account.id} className="accounts-pop-row">
+                        <div className="accounts-pop-name">
+                          <span className="truncate">{account.name}</span>
+                          <span className="accounts-pop-owner">{ownerLabel(account, members)}</span>
+                        </div>
+                        <span
+                          className={`accounts-pop-amount ${balanceCents < 0 ? "figure-negative" : ""}`}
+                        >
+                          {balanceCents < 0 ? "−" : ""}
+                          {money2(balanceCents)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="accounts-pop-total">
+                  <span>Total</span>
+                  <span className={totalMoney < 0 ? "figure-negative" : ""}>
+                    {totalMoney < 0 ? "−" : ""}
+                    {money2(totalMoney)}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
