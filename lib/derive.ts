@@ -30,6 +30,15 @@ export function isTransactionInScope(tx: Transaction, scopeIds: Set<string> | nu
   return scopeIds.has(tx.account_id);
 }
 
+// Una cuenta concreta como filtro: mismo criterio que isTransactionInScope
+// pero con una sola cuenta — un traspaso cuenta si es origen o destino.
+export function isTransactionOnAccount(tx: Transaction, accountId: string): boolean {
+  if (tx.kind === "transfer") {
+    return tx.account_id === accountId || tx.to_account_id === accountId;
+  }
+  return tx.account_id === accountId;
+}
+
 export function isInMonth(tx: Transaction, year: number, month: number): boolean {
   return tx.occurred_on.startsWith(`${year}-${String(month).padStart(2, "0")}`);
 }

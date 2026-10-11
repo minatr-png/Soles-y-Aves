@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Account, Category, HouseholdMember, MovementKind, Transaction } from "@/lib/supabase/types";
 import { money2, signed } from "@/lib/format";
 import {
   formatShortDateWithYear,
   isTransactionInScope,
+  isTransactionOnAccount,
   movementColor,
   movementLabel,
   movementSub,
+  ownerLabel,
   scopedAccountIds,
   type OwnerScope,
 } from "@/lib/derive";
@@ -31,7 +33,10 @@ const TYPE_OPTIONS: { value: "all" | MovementKind; label: string }[] = [
   { value: "transfer", label: "Solo traspasos" },
 ];
 
-const MAX_ROWS = 300;
+// La lista se pinta de 100 en 100 y crece al llegar al final: la página ya
+// trae todo el histórico (listAllTransactions, necesario para filtrar y
+// sumar en cliente), así que lo que se pagina es el render, no la consulta.
+const PAGE_SIZE = 100;
 
 function amountNode(tx: Transaction) {
   if (tx.kind === "expense") {
@@ -54,22 +59,31 @@ export function MovimientosView({ members, accounts, categories, transactions }:
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
   const [searchText, setSearchText] = useState(() => searchParams.get("q") ?? "");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const ownerScope = (searchParams.get("owner") as OwnerScope | null) ?? "all";
   const typeParam = (searchParams.get("t") as MovementKind | "all" | null) ?? "all";
   const catParam = searchParams.get("cat") ?? "all";
+  const accParam = searchParams.get("acc") ?? "all";
   const fromParam = searchParams.get("from") ?? "";
   const toParam = searchParams.get("to") ?? "";
 
-  function setParam(key: string, value: string) {
+  function setParams(entries: [string, string][]) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === "all" || value === "") {
-      params.delete(key);
-    } else {
-      params.set(key, value);
+    for (const [key, value] of entries) {
+      if (value === "all" || value === "") {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
     }
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  function setParam(key: string, value: string) {
+    setParams([[key, value]]);
   }
 
   useEffect(() => {
@@ -87,11 +101,28 @@ export function MovimientosView({ members, accounts, categories, transactions }:
     [transactions, scopeIds, deletedIds],
   );
 
+  // El selector de cuenta es un refinamiento del filtro de persona de la
+  // cabecera: con "Miguel" activo solo se ofrecen las cuentas de Miguel.
+  const availableAccounts = useMemo(
+    () => (scopeIds === null ? accounts : accounts.filter((a) => scopeIds.has(a.id))),
+    [accounts, scopeIds],
+  );
+  // Al cambiar de persona la cuenta elegida puede quedar fuera de alcance:
+  // se ignora al filtrar y se limpia de la URL.
+  const accInScope = accParam !== "all" && availableAccounts.some((a) => a.id === accParam);
+  const effectiveAcc = accInScope ? accParam : "all";
+
+  useEffect(() => {
+    if (accParam !== "all" && !accInScope) setParam("acc", "all");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accParam, accInScope]);
+
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     return scopedTx.filter((t) => {
       if (typeParam !== "all" && t.kind !== typeParam) return false;
       if (catParam !== "all" && t.category_id !== catParam) return false;
+      if (effectiveAcc !== "all" && !isTransactionOnAccount(t, effectiveAcc)) return false;
       if (fromParam && t.occurred_on < fromParam) return false;
       if (toParam && t.occurred_on > toParam) return false;
       if (q) {
@@ -101,19 +132,36 @@ export function MovimientosView({ members, accounts, categories, transactions }:
       }
       return true;
     });
-  }, [scopedTx, typeParam, catParam, fromParam, toParam, searchText, categories]);
+  }, [scopedTx, typeParam, catParam, effectiveAcc, fromParam, toParam, searchText, categories]);
 
-  const summarySum = useMemo(
-    () =>
-      filtered.reduce((sum, t) => {
-        if (t.kind === "income") return sum + t.amount_cents;
-        if (t.kind === "expense") return sum - t.amount_cents;
-        return sum;
-      }, 0),
-    [filtered],
-  );
+  // Cualquier cambio de filtro devuelve la lista a la primera página. Se
+  // ajusta durante el render (no en un efecto) para no pintar antes el tramo
+  // largo del filtro anterior.
+  const filterKey = [ownerScope, typeParam, catParam, effectiveAcc, fromParam, toParam, searchText].join("|");
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (lastFilterKey !== filterKey) {
+    setLastFilterKey(filterKey);
+    setVisibleCount(PAGE_SIZE);
+  }
 
-  const rows = filtered.slice(0, MAX_ROWS);
+  const rows = filtered.slice(0, visibleCount);
+  const hasMore = filtered.length > rows.length;
+
+  // Se re-crea el observer en cada tramo (depende de visibleCount) para que
+  // vuelva a evaluar el centinela: si tras crecer sigue visible, encadena
+  // otro tramo sin esperar a que el usuario mueva el scroll.
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!hasMore || !node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) setVisibleCount((n) => n + PAGE_SIZE);
+      },
+      { rootMargin: "400px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, visibleCount]);
 
   async function handleDelete(id: string) {
     setDeleteError(null);
@@ -167,6 +215,20 @@ export function MovimientosView({ members, accounts, categories, transactions }:
           ))}
         </select>
 
+        <select
+          className="filter-control"
+          aria-label="Cuenta"
+          value={effectiveAcc}
+          onChange={(e) => setParam("acc", e.target.value)}
+        >
+          <option value="all">Todas las cuentas</option>
+          {availableAccounts.map((a) => (
+            <option key={a.id} value={a.id}>
+              {ownerScope === "all" ? `${a.name} · ${ownerLabel(a, members)}` : a.name}
+            </option>
+          ))}
+        </select>
+
         <input
           type="date"
           className="filter-control"
@@ -185,16 +247,24 @@ export function MovimientosView({ members, accounts, categories, transactions }:
           onChange={(e) => setParam("to", e.target.value)}
         />
 
+        {/* En móvil el <input type="date"> nativo no ofrece forma de vaciarse,
+            así que el rango necesita su propio botón para quitarse. */}
+        {(fromParam || toParam) && (
+          <button
+            type="button"
+            className="filter-control filter-clear"
+            onClick={() => setParams([["from", ""], ["to", ""]])}
+          >
+            Quitar fechas ×
+          </button>
+        )}
+
         <input
           className="filter-control filter-search"
           placeholder="Buscar nota…"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
-
-        <span className="filter-summary">
-          {filtered.length} mov. · {signed(summarySum)}
-        </span>
       </div>
 
       {deleteError && <p className="field-error">{deleteError}</p>}
@@ -239,6 +309,12 @@ export function MovimientosView({ members, accounts, categories, transactions }:
           ))
         )}
       </div>
+
+      {hasMore && (
+        <div ref={sentinelRef} className="movement-list-sentinel" aria-hidden>
+          Cargando más…
+        </div>
+      )}
 
       {pendingDelete && (
         <div className="confirm-veil" onClick={() => setPendingDelete(null)}>

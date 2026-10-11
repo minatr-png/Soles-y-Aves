@@ -60,7 +60,7 @@ No `route.ts` API handlers anywhere — all reads go through Server Components c
 directly; all writes are client-side calls into `lib/mutations.ts`. No `error.tsx`/`not-found.tsx` yet.
 
 Filter/scope state is deliberately kept in the **URL**, not component state: `owner` (person filter,
-all four routes), `y`/`m` (year/month — Panel, Año), `t`/`cat`/`from`/`to`/`q` (Movimientos). This is a
+all four routes), `y`/`m` (year/month — Panel, Año), `t`/`cat`/`acc`/`from`/`to`/`q` (Movimientos — `acc` is a single-account filter whose option list is itself narrowed by `owner`). This is a
 repo-wide convention (so a given view is always linkable/shareable) — new filters should follow it
 rather than introducing local-only state.
 

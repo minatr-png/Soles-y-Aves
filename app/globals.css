@@ -1209,11 +1209,11 @@ body {
   flex: 1 1 180px;
 }
 
-.filter-summary {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink-muted-55);
+.filter-clear {
+  cursor: pointer;
   white-space: nowrap;
+  font-weight: 600;
+  color: var(--ink-muted-55);
 }
 
 .movement-list {
@@ -1260,6 +1260,15 @@ body {
 
 .row-action-btn[data-variant="delete"] {
   color: var(--red-deep);
+}
+
+/* Centinela de scroll infinito de Movimientos: fuera de .movement-list para
+   no romper la regla .movement-list-row:last-child. */
+.movement-list-sentinel {
+  padding: 14px 0 4px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: rgba(32, 30, 29, 0.5);
 }
 
 @media (max-width: 640px) {
