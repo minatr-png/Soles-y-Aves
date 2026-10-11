@@ -2,8 +2,16 @@ import { LoginForm } from "./login-form";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-dvh items-center justify-center p-6">
-      <LoginForm />
-    </div>
+    <>
+      <div className="app-shell-bg" aria-hidden>
+        <div className="blob blob-red" />
+        <div className="blob blob-ink" />
+        <div className="blob blob-salmon" />
+      </div>
+
+      <div className="auth-shell">
+        <LoginForm />
+      </div>
+    </>
   );
 }

@@ -1,12 +1,15 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { OtpInput } from "./otp-input";
 import {
   sendCode,
   verifyCode,
   type SendCodeState,
   type VerifyCodeState,
 } from "./actions";
+
+const CODE_LENGTH = 8;
 
 const initialSendState: SendCodeState = { status: "idle", message: "" };
 const initialVerifyState: VerifyCodeState = { status: "idle", message: "" };
@@ -23,6 +26,9 @@ export function LoginForm() {
     initialVerifyState,
   );
 
+  const [code, setCode] = useState("");
+  const missing = CODE_LENGTH - code.length;
+
   async function handleSend(formData: FormData) {
     setSendPending(true);
     const result = await sendCode(initialSendState, formData);
@@ -33,86 +39,114 @@ export function LoginForm() {
     }
   }
 
-  if (step === "code") {
-    return (
-      <form action={verifyAction} className="flex w-full max-w-sm flex-col gap-3">
-        <h1 className="text-2xl font-bold">Ahorros</h1>
-        <p className="text-sm text-zinc-600">
-          Introduce el código de 6 dígitos que hemos enviado a {email}.
-        </p>
-
-        <input type="hidden" name="email" value={email} />
-
-        <label htmlFor="token" className="text-sm font-medium">
-          Código de acceso
-        </label>
-        <input
-          id="token"
-          name="token"
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          required
-          placeholder="123456"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-lg tracking-widest"
-        />
-
-        <button
-          type="submit"
-          disabled={verifyPending}
-          className="rounded-md bg-zinc-900 px-3 py-2 font-medium text-white disabled:opacity-50"
-        >
-          {verifyPending ? "Comprobando…" : "Entrar"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setStep("email")}
-          className="text-sm text-zinc-500 underline"
-        >
-          Usar otro correo
-        </button>
-
-        {verifyState.status === "error" && (
-          <p className="text-sm text-red-600">{verifyState.message}</p>
-        )}
-      </form>
-    );
-  }
-
   return (
-    <form action={handleSend} className="flex w-full max-w-sm flex-col gap-3">
-      <h1 className="text-2xl font-bold">Ahorros</h1>
-      <p className="text-sm text-zinc-600">
-        Inicia sesión con un código enviado a tu correo.
-      </p>
+    <div className="auth-card">
+      <div className="auth-brand">
+        <div className="brand-mark" />
+        <span className="auth-brand-name">Ahorros</span>
+      </div>
 
-      <label htmlFor="email" className="text-sm font-medium">
-        Correo electrónico
-      </label>
-      <input
-        id="email"
-        name="email"
-        type="email"
-        required
-        autoComplete="email"
-        placeholder="tu@correo.com"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        className="rounded-md border border-zinc-300 px-3 py-2"
-      />
+      <div className="auth-steps" aria-hidden>
+        <span className="auth-step-dot" data-active="true" />
+        <span className="auth-step-dot" data-active={step === "code"} />
+      </div>
 
-      <button
-        type="submit"
-        disabled={sendPending}
-        className="rounded-md bg-zinc-900 px-3 py-2 font-medium text-white disabled:opacity-50"
-      >
-        {sendPending ? "Enviando…" : "Enviar código de acceso"}
-      </button>
+      {step === "code" ? (
+        <>
+          <p className="kicker">Paso 2 de 2</p>
+          <p className="auth-lede">
+            Introduce el código de {CODE_LENGTH} dígitos que hemos enviado a{" "}
+            <strong>{email}</strong>.
+          </p>
 
-      {sendState.status === "error" && (
-        <p className="text-sm text-red-600">{sendState.message}</p>
+          <form action={verifyAction} className="auth-form">
+            <input type="hidden" name="email" value={email} />
+
+            <div className="field">
+              <label htmlFor="token" className="field-label">
+                Código de acceso
+              </label>
+              <OtpInput
+                id="token"
+                name="token"
+                length={CODE_LENGTH}
+                value={code}
+                onValueChange={setCode}
+                autoFocus
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={verifyPending || missing > 0}
+              className="btn-auth"
+            >
+              {verifyPending
+                ? "Comprobando…"
+                : missing === 0
+                  ? "Entrar"
+                  : missing === 1
+                    ? "Falta 1 dígito"
+                    : `Faltan ${missing} dígitos`}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCode("");
+                setStep("email");
+              }}
+              className="btn-auth-ghost"
+            >
+              Usar otro correo
+            </button>
+
+            {verifyState.status === "error" && (
+              <p className="auth-note" data-tone="error" role="alert">
+                <span className="auth-note-dot" aria-hidden />
+                {verifyState.message}
+              </p>
+            )}
+          </form>
+        </>
+      ) : (
+        <>
+          <p className="kicker">Paso 1 de 2</p>
+          <p className="auth-lede">
+            Inicia sesión con un código de un solo uso enviado a tu correo.
+          </p>
+
+          <form action={handleSend} className="auth-form">
+            <div className="field">
+              <label htmlFor="email" className="field-label">
+                Correo electrónico
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="tu@correo.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="field-control"
+              />
+            </div>
+
+            <button type="submit" disabled={sendPending} className="btn-auth">
+              {sendPending ? "Enviando…" : "Enviar código de acceso"}
+            </button>
+
+            {sendState.status === "error" && (
+              <p className="auth-note" data-tone="error" role="alert">
+                <span className="auth-note-dot" aria-hidden />
+                {sendState.message}
+              </p>
+            )}
+          </form>
+        </>
       )}
-    </form>
+    </div>
   );
 }
