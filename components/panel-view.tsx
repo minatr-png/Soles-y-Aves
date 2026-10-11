@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { LinkPendingWatcher } from "@/components/link-pending-watcher";
@@ -60,7 +60,7 @@ export function PanelView({
   const searchParams = useSearchParams();
   const [notesOpen, setNotesOpen] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [accountsOpen, setAccountsOpen] = useState(false);
+  const [accountsState, setAccountsState] = useState<"closed" | "open" | "closing">("closed");
   const [pickerYear, setPickerYear] = useState(year);
 
   const now = new Date();
@@ -113,6 +113,25 @@ export function PanelView({
     setPickerYear(displayYear);
     setPickerOpen(true);
   }
+
+  // Cerrar = pasar por "closing", que reproduce la animación de salida; el
+  // desmontaje real ocurre en onAnimationEnd.
+  const closeAccounts = useCallback(() => {
+    setAccountsState((s) => (s === "open" ? "closing" : s));
+  }, []);
+
+  // El desglose está anclado al botón, así que al hacer scroll se cierra en
+  // lugar de viajar con la página. El margen de 8px evita que lo cierre el
+  // pequeño reajuste de layout al abrirlo.
+  useEffect(() => {
+    if (accountsState !== "open") return;
+    const startY = window.scrollY;
+    function onScroll() {
+      if (Math.abs(window.scrollY - startY) > 8) closeAccounts();
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [accountsState, closeAccounts]);
 
   const [pendingLinks, setPendingLinks] = useState<Set<string>>(new Set());
   const handlePendingChange = useCallback((id: string, pending: boolean) => {
@@ -220,9 +239,9 @@ export function PanelView({
           <button
             type="button"
             className="total-money-btn"
-            onClick={() => setAccountsOpen((v) => !v)}
+            onClick={() => setAccountsState((s) => (s === "open" ? "closing" : "open"))}
             aria-haspopup="dialog"
-            aria-expanded={accountsOpen}
+            aria-expanded={accountsState === "open"}
           >
             <span className="kicker">Dinero total</span>
             <span className={`text-base font-extrabold ${totalMoney < 0 ? "figure-negative" : ""}`}>
@@ -231,10 +250,18 @@ export function PanelView({
             </span>
           </button>
 
-          {accountsOpen && (
+          {accountsState !== "closed" && (
             <>
-              <div className="pop-veil" onClick={() => setAccountsOpen(false)} />
-              <div className="accounts-pop" role="dialog" aria-label="Dinero por cuenta">
+              {accountsState === "open" && <div className="pop-veil" onClick={closeAccounts} />}
+              <div
+                className="accounts-pop"
+                role="dialog"
+                aria-label="Dinero por cuenta"
+                data-closing={accountsState === "closing"}
+                onAnimationEnd={() =>
+                  setAccountsState((s) => (s === "closing" ? "closed" : s))
+                }
+              >
                 <p className="kicker">Dinero por cuenta</p>
                 {scopedAccountBalances.length === 0 ? (
                   <p className="accounts-pop-empty">No hay cuentas en este filtro.</p>

@@ -500,6 +500,11 @@ body {
   isolation: isolate;
 }
 
+.accounts-pop[data-closing="true"] {
+  animation: accounts-pop-out 0.15s ease-in both;
+  pointer-events: none;
+}
+
 .accounts-pop::before {
   content: "";
   position: absolute;
@@ -526,6 +531,17 @@ body {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes accounts-pop-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
   }
 }
 
